@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="header">
+    <h3>Selector Copy</h3>
+    <button class="help-btn" id="helpBtn" title="选择器说明">?</button>
+  </div>
+
+  <div class="help-panel" id="helpPanel">
+    <h4>CSS 选择器示例</h4>
+    <table>
+      <tr><td>.class</td><td>class 为 class 的元素</td></tr>
+      <tr><td>#id</td><td>id 为 id 的元素</td></tr>
+      <tr><td>tag</td><td>所有 &lt;tag&gt; 标签</td></tr>
+      <tr><td>div p</td><td>div 内部的所有 p</td></tr>
+      <tr><td>div > p</td><td>div 的直接子 p</td></tr>
+      <tr><td>a[href]</td><td>带 href 属性的 a</td></tr>
+      <tr><td>li:nth-child(2)</td><td>第 2 个 li</td></tr>
+      <tr><td>.a, .b</td><td>class 为 a 或 b</td></tr>
+    </table>
+  </div>
+
+  <div class="selector-row">
+    <input id="selector" placeholder="e.g. .title or div p" />
+    <label class="toggle" title="实时预览匹配元素">
+      <input type="checkbox" id="livePreview" />
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      <span class="toggle-label">预览</span>
+    </label>
+  </div>
+
+  <div class="match-count" id="matchCount"></div>
+
+  <button id="run">Query</button>
+  <button id="copy">Copy All</button>
+
+  <textarea id="result" placeholder="results..."></textarea>
+
+  <script src="popup.js"></script>
+</body>
+</html>

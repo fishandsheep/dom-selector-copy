@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "DOM Selector Copy MVP",
+  "version": "1.0",
+  "description": "Use querySelectorAll to extract and copy text content",
+  "permissions": ["activeTab", "scripting", "clipboardWrite"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
