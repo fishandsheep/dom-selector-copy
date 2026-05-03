@@ -8,6 +8,21 @@ const pickElementBtn = document.getElementById("pickElement");
 
 livePreviewCheckbox.checked = true;
 
+async function hydrateLastPickedSelector() {
+  const { selectorCopyLastPick } = await chrome.storage.local.get("selectorCopyLastPick");
+  if (!selectorCopyLastPick?.selector) return;
+
+  const { selector, tagName, className } = selectorCopyLastPick;
+  selectorInput.value = selector;
+
+  if (livePreviewOn) {
+    updatePreview(selector);
+  }
+
+  const classLabel = className ? `.${className}` : "(无 class)";
+  matchCountEl.textContent = `已恢复: ${tagName || ""}${classLabel}`;
+}
+
 document.getElementById("helpBtn").addEventListener("click", () => {
   document.getElementById("helpPanel").classList.toggle("show");
 });
@@ -105,6 +120,22 @@ chrome.runtime.onMessage.addListener((message) => {
   const classLabel = className ? `.${className}` : "(无 class)";
   matchCountEl.textContent = `已填入: ${tagName || ""}${classLabel}`;
 });
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "local") return;
+  if (!changes.selectorCopyLastPick?.newValue?.selector) return;
+
+  const { selector, tagName, className } = changes.selectorCopyLastPick.newValue;
+  selectorInput.value = selector;
+  if (livePreviewOn) {
+    updatePreview(selector);
+  }
+
+  const classLabel = className ? `.${className}` : "(无 class)";
+  matchCountEl.textContent = `已同步: ${tagName || ""}${classLabel}`;
+});
+
+hydrateLastPickedSelector();
 
 document.getElementById("run").addEventListener("click", async () => {
   const selector = selectorInput.value;

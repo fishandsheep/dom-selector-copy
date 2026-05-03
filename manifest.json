@@ -3,7 +3,7 @@
   "name": "DOM Selector Copy MVP",
   "version": "1.0",
   "description": "Use querySelectorAll to extract and copy text content",
-  "permissions": ["activeTab", "scripting", "clipboardWrite"],
+  "permissions": ["activeTab", "scripting", "clipboardWrite", "storage"],
   "action": {
     "default_popup": "popup.html"
   },
