@@ -95,6 +95,12 @@
     };
 
     stopPickMode();
+    chrome.storage.local.set({
+      selectorCopyLastPick: {
+        ...payload,
+        pickedAt: Date.now(),
+      },
+    });
     chrome.runtime.sendMessage({ type: "ELEMENT_PICKED", payload });
   }
 
