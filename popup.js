@@ -1,5 +1,12 @@
 let lastResults = [];
-let livePreviewOn = false;
+let livePreviewOn = true;
+
+const selectorInput = document.getElementById("selector");
+const livePreviewCheckbox = document.getElementById("livePreview");
+const matchCountEl = document.getElementById("matchCount");
+const pickElementBtn = document.getElementById("pickElement");
+
+livePreviewCheckbox.checked = true;
 
 document.getElementById("helpBtn").addEventListener("click", () => {
   document.getElementById("helpPanel").classList.toggle("show");
@@ -10,57 +17,112 @@ async function getActiveTab() {
   return tab;
 }
 
-function updatePreview(selector) {
-  if (!selector || !livePreviewOn) {
-    chrome.tabs.sendMessage((chrome.devtoolsInspectedWindow ? undefined : undefined), { type: "CLEAR_PREVIEW" });
-  }
-  getActiveTab().then(tab => {
-    chrome.tabs.sendMessage(tab.id, {
-      type: "PREVIEW_SELECTOR",
-      selector
-    }, (response) => {
-      const countEl = document.getElementById("matchCount");
-      if (chrome.runtime.lastError) {
-        countEl.textContent = "";
-        return;
-      }
-      const count = Array.isArray(response) ? response.length : 0;
-      countEl.textContent = count > 0 ? `匹配 ${count} 个元素` : (selector ? "无匹配" : "");
-    });
+function clearPreview() {
+  getActiveTab().then((tab) => {
+    if (!tab?.id) return;
+    chrome.tabs.sendMessage(tab.id, { type: "CLEAR_PREVIEW" });
   });
 }
 
-document.getElementById("livePreview").addEventListener("change", (e) => {
+function updatePreview(selector) {
+  if (!selector || !livePreviewOn) {
+    clearPreview();
+    matchCountEl.textContent = "";
+    return;
+  }
+
+  getActiveTab().then((tab) => {
+    if (!tab?.id) return;
+
+    chrome.tabs.sendMessage(
+      tab.id,
+      {
+        type: "PREVIEW_SELECTOR",
+        selector,
+      },
+      (count) => {
+        if (chrome.runtime.lastError) {
+          matchCountEl.textContent = "";
+          return;
+        }
+        matchCountEl.textContent = count > 0 ? `匹配 ${count} 个元素` : "无匹配";
+      }
+    );
+  });
+}
+
+livePreviewCheckbox.addEventListener("change", (e) => {
   livePreviewOn = e.target.checked;
-  const selector = document.getElementById("selector").value.trim();
+  const selector = selectorInput.value.trim();
+
   if (!livePreviewOn) {
-    getActiveTab().then(tab => {
-      chrome.tabs.sendMessage(tab.id, { type: "CLEAR_PREVIEW" });
-    });
-    document.getElementById("matchCount").textContent = "";
-  } else if (selector) {
+    clearPreview();
+    matchCountEl.textContent = "";
+    return;
+  }
+
+  if (selector) {
     updatePreview(selector);
   }
 });
 
-document.getElementById("selector").addEventListener("input", (e) => {
+selectorInput.addEventListener("input", (e) => {
   if (livePreviewOn) {
     updatePreview(e.target.value.trim());
   }
 });
 
-document.getElementById("run").addEventListener("click", async () => {
-  const selector = document.getElementById("selector").value;
+pickElementBtn.addEventListener("click", async () => {
+  const tab = await getActiveTab();
+  if (!tab?.id) return;
 
+  chrome.tabs.sendMessage(tab.id, { type: "START_ELEMENT_PICK" }, (response) => {
+    if (chrome.runtime.lastError) {
+      matchCountEl.textContent = "当前页面不可拾取（如 chrome:// 页面）";
+      return;
+    }
+
+    if (!response?.ok) {
+      matchCountEl.textContent = "元素拾取启动失败";
+      return;
+    }
+
+    matchCountEl.textContent = "请在页面中点击一个元素";
+  });
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type !== "ELEMENT_PICKED") return;
+
+  const { selector, tagName, className } = message.payload || {};
+  if (!selector) return;
+
+  selectorInput.value = selector;
+  if (livePreviewOn) {
+    updatePreview(selector);
+  }
+
+  const classLabel = className ? `.${className}` : "(无 class)";
+  matchCountEl.textContent = `已填入: ${tagName || ""}${classLabel}`;
+});
+
+document.getElementById("run").addEventListener("click", async () => {
+  const selector = selectorInput.value;
   const tab = await getActiveTab();
 
-  chrome.tabs.sendMessage(tab.id, {
-    type: "QUERY_SELECTOR",
-    selector
-  }, (response) => {
-    lastResults = response || [];
-    document.getElementById("result").value = lastResults.join("\n");
-  });
+  if (!tab?.id) return;
+
+  chrome.tabs.sendMessage(
+    tab.id,
+    {
+      type: "QUERY_SELECTOR",
+      selector,
+    },
+    (response) => {
+      lastResults = response || [];
+      document.getElementById("result").value = lastResults.join("\n");
+    }
+  );
 });
 
 document.getElementById("copy").addEventListener("click", async () => {
