@@ -45,7 +45,10 @@
   }
 
   function normalizeClassName(className = "") {
-    return className.trim().split(/\s+/).filter(Boolean)[0] || "";
+    return className
+      .trim()
+      .split(/\s+/)
+      .filter((name) => name && name !== PICK_CLASS && name !== CLASS)[0] || "";
   }
 
   function buildSimpleSelector(el) {
