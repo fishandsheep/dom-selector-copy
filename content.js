@@ -25,6 +25,7 @@
   let highlighted = [];
   let pickHoverEl = null;
   let pickModeOn = false;
+  const pickSessionClassSnapshot = new WeakMap();
 
   function clearHighlights() {
     for (const el of highlighted) el.classList.remove(CLASS);
@@ -44,11 +45,28 @@
     }
   }
 
+  function shouldIgnoreClassName(name = "") {
+    if (!name) return true;
+    if (name === PICK_CLASS || name === CLASS) return true;
+
+    // 部分页面增强/翻译插件会临时注入类似 b_LinksColorMD 的 class，
+    // 这类 class 不是目标元素原始语义，构造 selector 时应忽略。
+    if (/^b_[A-Z]/.test(name)) return true;
+
+    return false;
+  }
+
   function normalizeClassName(className = "") {
     return className
       .trim()
       .split(/\s+/)
-      .filter((name) => name && name !== PICK_CLASS && name !== CLASS)[0] || "";
+      .filter((name) => !shouldIgnoreClassName(name))[0] || "";
+  }
+
+  function getSnapshotClassName(el) {
+    const snapshot = pickSessionClassSnapshot.get(el);
+    if (typeof snapshot === "string") return snapshot;
+    return el.className || "";
   }
 
   function buildSimpleSelector(el) {
@@ -64,6 +82,10 @@
 
     if (pickHoverEl && pickHoverEl !== el) {
       pickHoverEl.classList.remove(PICK_CLASS);
+    }
+
+    if (!pickSessionClassSnapshot.has(el)) {
+      pickSessionClassSnapshot.set(el, el.className || "");
     }
 
     pickHoverEl = el;
@@ -91,10 +113,15 @@
       return;
     }
 
+    const rawClassName = getSnapshotClassName(el);
     const payload = {
       tagName: (el.tagName || "").toLowerCase(),
-      className: normalizeClassName(el.className || ""),
-      selector: buildSimpleSelector(el),
+      className: normalizeClassName(rawClassName),
+      selector: (() => {
+        const tag = (el.tagName || "").toLowerCase();
+        const firstClass = normalizeClassName(rawClassName);
+        return firstClass ? `${tag}.${firstClass}` : tag;
+      })(),
     };
 
     stopPickMode();
